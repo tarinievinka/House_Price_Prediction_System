@@ -1,10 +1,24 @@
+import os
+
+import joblib
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score, mean_absolute_error
 
-# 1. Load the dataset
-df = pd.read_csv('data/Housing_Price_Data.csv')
+# -------------------------------------------------------------------------
+# Dynamic Path Configuration (Fixes FileNotFoundError)
+# -------------------------------------------------------------------------
+# 1. Get the absolute directory path where this script lives (D:/.../src)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Safely jump up to project root, then point straight into the data folder
+input_csv_path = os.path.join(script_dir, '..', 'data', 'Housing_Price_Data.csv')
+output_csv_path = os.path.join(script_dir, '..', 'data', 'Housing_Prices_with_Predictions.csv')
+
+
+# 1. Load the dataset using the robust path
+df = pd.read_csv(input_csv_path)
 
 # 2. Preprocessing & Encoding Categorical Features
 binary_cols = ['mainroad', 'guestroom', 'basement', 'hotwaterheating', 'airconditioning', 'prefarea']
@@ -39,6 +53,16 @@ print(f"Mean Absolute Error: LKR {mae:,.2f}")
 df['predicted_price'] = np.round(y_pred, 2)
 df['prediction_error'] = np.round(df['price'] - df['predicted_price'], 2)
 
-# Export the enriched dataset for Power BI
-df.to_csv('data/Housing_Prices_with_Predictions.csv', index=False)
+# Export the enriched dataset for Power BI using the robust path
+df.to_csv(output_csv_path, index=False)
 print("Housing_Prices_with_Predictions.csv has been successfully generated!")
+
+# -------------------------------------------------------------------------
+# 7. SAVE THE TRAINED MODEL FOR FASTAPI USE
+# -------------------------------------------------------------------------
+models_dir = os.path.join(script_dir, '..', 'models')
+os.makedirs(models_dir, exist_ok=True)
+model_output_path = os.path.join(models_dir, 'house_price_regressor.pkl')
+
+joblib.dump(model, model_output_path)
+print(f"Production model successfully saved to: {model_output_path}")
